@@ -1431,10 +1431,90 @@
               }
             ]
           }
+        },
+        {
+          "ƒ.Node": {
+            "name": "pacman",
+            "active": true,
+            "components": {
+              "ComponentMesh": [
+                {
+                  "ƒ.ComponentMesh": {
+                    "idMesh": "MeshSphere|2022-03-22T15:26:27.882Z|14504",
+                    "pivot": {
+                      "translation": "[0, 0, 0]",
+                      "rotation": "[0, 0, 0]",
+                      "scaling": "[0.800000011920929, 0.800000011920929, 0.800000011920929]"
+                    },
+                    "Component": {
+                      "active": true
+                    }
+                  }
+                }
+              ],
+              "ComponentMaterial": [
+                {
+                  "ƒ.ComponentMaterial": {
+                    "sortForAlpha": false,
+                    "clrPrimary": "[0.9333333333333333, 1, 0, 1]",
+                    "clrSecondary": "[1, 1, 1, 1]",
+                    "pivot": {
+                      "translation": "[0, 0]",
+                      "rotation": 0,
+                      "scaling": "[1, 1]"
+                    },
+                    "Component": {
+                      "active": true
+                    },
+                    "idMaterial": "Material|2022-03-17T14:07:52.742Z|45158"
+                  }
+                }
+              ],
+              "ComponentTransform": [
+                {
+                  "ƒ.ComponentTransform": {
+                    "local": {
+                      "translation": "[0, 0, 0]",
+                      "rotation": "[0, 0, 0]",
+                      "scaling": "[1, 1, 1]"
+                    },
+                    "Component": {
+                      "active": true
+                    }
+                  }
+                }
+              ]
+            },
+            "children": []
+          }
         }
       ],
       "idResource": "Graph|2022-03-17T14:08:03.985Z|24476",
       "type": "Graph"
+    }
+  },
+  "MeshSphere|2022-03-22T15:26:27.882Z|14504": {
+    "ƒ.MeshSphere": {
+      "idResource": "MeshSphere|2022-03-22T15:26:27.882Z|14504",
+      "name": "pacman",
+      "type": "MeshSphere",
+      "shape": {
+        "ƒ.Vector2": [
+          "[0, 0.5]",
+          "[0.15450850129127502, 0.4755282700061798]",
+          "[0.29389262199401855, 0.404508501291275]",
+          "[0.404508501291275, 0.29389262199401855]",
+          "[0.4755282700061798, 0.15450850129127502]",
+          "[0.5, 0]",
+          "[0.4755282700061798, -0.15450850129127502]",
+          "[0.404508501291275, -0.29389262199401855]",
+          "[0.29389262199401855, -0.404508501291275]",
+          "[0.15450850129127502, -0.4755282700061798]",
+          "[0, -0.5]"
+        ]
+      },
+      "longitudes": 8,
+      "latitudes": 10
     }
   }
 }
