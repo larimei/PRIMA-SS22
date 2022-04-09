@@ -2,130 +2,196 @@ namespace Script {
   import ƒ = FudgeCore;
   ƒ.Debug.info("Main Program Template running!");
 
-  enum Direction {
-    None = "NONE",
+  export enum Direction {
     Up = "UP",
     Down = "DOWN",
     Left = "LEFT",
     Right = "RIGHT",
   }
 
-  let viewport: ƒ.Viewport;
-  let pacman: ƒ.Node;
-  let speed: ƒ.Vector3 = new ƒ.Vector3(0, 0, 0);
-  let direction = Direction.None;
-  let newDirection = Direction.None;
+  let dialog: HTMLDialogElement;
+
+  window.addEventListener("load", init);
 
   document.addEventListener("interactiveViewportStarted", <EventListener>start);
 
+  let viewport: ƒ.Viewport;
+  let pacman: ƒ.Node;
+  let walls: ƒ.Node[];
+  let paths: ƒ.Node[];
+
+  let sounds: ƒ.ComponentAudio[];
+
+  let direction: Direction;
+  let speed: ƒ.Vector3 = new ƒ.Vector3(0, 0, 0);
+
+  function init(_event: Event): void {
+    dialog = document.querySelector("dialog");
+    dialog.querySelector("h1").textContent = document.title;
+    dialog.addEventListener("click", function (_event: Event) {
+      // @ts-ignore until HTMLDialog is implemented by all browsers and available in dom.d.ts
+      dialog.close();
+      startInteractiveViewport();
+    });
+    // @ts-ignore
+    dialog.showModal();
+  }
+
+  async function startInteractiveViewport(): Promise<void> {
+    // load resources referenced in the link-tag
+    await ƒ.Project.loadResourcesFromHTML();
+    ƒ.Debug.log("Project:", ƒ.Project.resources);
+    // pick the graph to show
+    let graph: ƒ.Graph = ƒ.Project.resources[
+      "Graph|2022-03-17T14:08:08.737Z|08207"
+    ] as ƒ.Graph;
+    ƒ.Debug.log("Graph:", graph);
+    if (!graph) {
+      alert(
+        "Nothing to render. Create a graph with at least a mesh, material and probably some light"
+      );
+      return;
+    }
+    // setup the viewport
+    let cmpCamera: ƒ.ComponentCamera = new ƒ.ComponentCamera();
+    let canvas: HTMLCanvasElement = document.querySelector("canvas");
+    let viewport: ƒ.Viewport = new ƒ.Viewport();
+    viewport.initialize("InteractiveViewport", graph, cmpCamera, canvas);
+    ƒ.Debug.log("Viewport:", viewport);
+
+    await loadSprites();
+
+    viewport.draw();
+    canvas.dispatchEvent(
+      new CustomEvent("interactiveViewportStarted", {
+        bubbles: true,
+        detail: viewport,
+      })
+    );
+  }
+
   function start(_event: CustomEvent): void {
     viewport = _event.detail;
-    let graph: ƒ.Node = viewport.getBranch();
+    viewport.camera.mtxPivot.translate(new ƒ.Vector3(2.5, 2.5, 15));
+    viewport.camera.mtxPivot.rotateY(180);
+
+    const graph: ƒ.Node = viewport.getBranch();
+
+    ƒ.AudioManager.default.listenTo(graph);
+
+    sounds = graph
+      .getChildrenByName("sound")[0]
+      .getComponents(ƒ.ComponentAudio);
+
     pacman = graph.getChildrenByName("pacman")[0];
+    walls = graph.getChildrenByName("grid")[0].getChild(1).getChildren();
+    paths = graph.getChildrenByName("grid")[0].getChild(0).getChildren();
+
+    setPacman(pacman);
 
     ƒ.Loop.addEventListener(ƒ.EVENT.LOOP_FRAME, update);
-    ƒ.Loop.start(); // start the game loop to continously draw the viewport, update the audiosystem and drive the physics i/a
-  }
-
-  function outOfPlayground(dir: string): boolean {
-    switch (dir) {
-      case "LEFT":
-        if (pacman.mtxLocal.translation.x <= 0) {
-          return true;
-        } else {
-          return false;
-        }
-      case "RIGHT":
-        if (pacman.mtxLocal.translation.x >= 4) {
-          return true;
-        } else {
-          return false;
-        }
-      case "UP":
-        if (pacman.mtxLocal.translation.y >= 4) {
-          return true;
-        } else {
-          return false;
-        }
-      case "DOWN":
-        if (pacman.mtxLocal.translation.y <= 0) {
-          return true;
-        } else {
-          return false;
-        }
-      default:
-        return false;
-    }
-  }
-
-  function checkDirectionection(): void {
-    if (
-      ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_LEFT, ƒ.KEYBOARD_CODE.A])
-    ) {
-      newDirection = Direction.Left;
-    }
-    if (
-      ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_RIGHT, ƒ.KEYBOARD_CODE.D])
-    ) {
-      newDirection= Direction.Right;
-    }
-    if (
-      ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_UP, ƒ.KEYBOARD_CODE.W])
-    ) {
-      newDirection = Direction.Up;
-    }
-    if (
-      ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_DOWN, ƒ.KEYBOARD_CODE.S])
-    ) {
-      newDirection= Direction.Down;
-    }
+    ƒ.Loop.start(); // start the game loop to continuously draw the viewport, update the audiosystem and drive the physics i/a
   }
 
   function update(_event: Event): void {
-    // ƒ.Physics.simulate();  // if physics is included and used
+    movePacman();
 
-    checkDirectionection();
-
-    if (
-      newDirection == "RIGHT" &&
-      pacman.mtxLocal.translation.y % 1 < 0.05 &&
-      outOfPlayground(newDirection) == false
-    ) {
-      direction = Direction.Right;
-      speed = new ƒ.Vector3(1 / 60, 0, 0);
+    if (checkForWall()) {
+      if (!sounds[1].isPlaying && !speed.equals(ƒ.Vector3.ZERO())) {
+        sounds[1].play(true);
+      }
+      pacman.mtxLocal.translate(speed);
     }
-    if (
-      newDirection == "LEFT" &&
-      pacman.mtxLocal.translation.y % 1 < 0.05 &&
-      outOfPlayground(newDirection) == false
-    ) {
-      direction = Direction.Left;
-
-      speed = new ƒ.Vector3(-1 / 60, 0, 0);
-    }
-    if (
-      newDirection == "UP" &&
-      pacman.mtxLocal.translation.x % 1 < 0.05 &&
-      outOfPlayground(newDirection) == false
-    ) {
-      direction = Direction.Up;
-      speed = new ƒ.Vector3(0, 1 / 60, 0);
-    }
-    if (
-      newDirection == "DOWN" &&
-      pacman.mtxLocal.translation.x % 1 < 0.05 &&
-      outOfPlayground(newDirection) == false
-    ) {
-      direction = Direction.Down;
-      speed = new ƒ.Vector3(0, -1 / 60, 0);
-    }
-
-    if (outOfPlayground(direction)) {
-      speed = new ƒ.Vector3(0, 0, 0);
-    }
-
-    pacman.mtxLocal.translate(speed);
     viewport.draw();
-    ƒ.AudioManager.default.update();
+  }
+
+  function movePacman(): void {
+    if (
+      ƒ.Keyboard.isPressedOne([
+        ƒ.KEYBOARD_CODE.ARROW_RIGHT,
+        ƒ.KEYBOARD_CODE.D,
+      ]) &&
+      (pacman.mtxLocal.translation.y + 0.025) % 1 < 0.05
+    ) {
+      if (checkForWall(Direction.Right)) {
+        rotatePacman(Direction.Right, direction);
+        speed.set(1 / 60, 0, 0);
+        direction = Direction.Right;
+      }
+    }
+
+    if (
+      ƒ.Keyboard.isPressedOne([
+        ƒ.KEYBOARD_CODE.ARROW_DOWN,
+        ƒ.KEYBOARD_CODE.S,
+      ]) &&
+      (pacman.mtxLocal.translation.x + 0.025) % 1 < 0.05
+    ) {
+      if (checkForWall(Direction.Down)) {
+        rotatePacman(Direction.Down, direction);
+        speed.set(0, -1 / 60, 0);
+        direction = Direction.Down;
+      }
+    }
+
+    if (
+      ƒ.Keyboard.isPressedOne([
+        ƒ.KEYBOARD_CODE.ARROW_LEFT,
+        ƒ.KEYBOARD_CODE.A,
+      ]) &&
+      (pacman.mtxLocal.translation.y + 0.025) % 1 < 0.05
+    ) {
+      if (checkForWall(Direction.Left)) {
+        rotatePacman(Direction.Left, direction);
+        speed.set(-1 / 60, 0, 0);
+        direction = Direction.Left;
+      }
+    }
+
+    if (
+      ƒ.Keyboard.isPressedOne([ƒ.KEYBOARD_CODE.ARROW_UP, ƒ.KEYBOARD_CODE.W]) &&
+      (pacman.mtxLocal.translation.x + 0.025) % 1 < 0.05
+    ) {
+      if (checkForWall(Direction.Up)) {
+        rotatePacman(Direction.Up, direction);
+        speed.set(0, 1 / 60, 0);
+        direction = Direction.Up;
+      }
+    }
+  }
+
+  function checkForWall(_dir?: Direction): boolean {
+    const y = pacman.mtxLocal.translation.y;
+    const x = pacman.mtxLocal.translation.x;
+    let newPos: ƒ.Vector3 = new ƒ.Vector3(500, 500, 500);
+
+    switch (_dir ?? direction) {
+      case Direction.Right:
+        newPos = new ƒ.Vector3(x + 1, y, 0);
+        break;
+      case Direction.Left:
+        newPos = new ƒ.Vector3(x - 1, y, 0);
+        break;
+      case Direction.Up:
+        newPos = new ƒ.Vector3(x, y + 1, 0);
+        break;
+      case Direction.Down:
+        newPos = new ƒ.Vector3(x, y - 1, 0);
+        break;
+      default:
+        break;
+    }
+
+    if (walls.find((w) => w.mtxLocal.translation.equals(newPos, 0.022))) {
+      sounds[1].play(false);
+      return false;
+    }
+
+    if (!paths.find((p) => p.mtxLocal.translation.equals(newPos, 1))) {
+      sounds[1].play(false);
+      return false;
+    }
+
+    return true;
   }
 }
