@@ -52,6 +52,7 @@ var Script;
     document.addEventListener("interactiveViewportStarted", start);
     let viewport;
     let pacman;
+    let ghost;
     let walls;
     let paths;
     let sounds;
@@ -104,6 +105,8 @@ var Script;
         pacman = graph.getChildrenByName("pacman")[0];
         walls = graph.getChildrenByName("grid")[0].getChild(1).getChildren();
         paths = graph.getChildrenByName("grid")[0].getChild(0).getChildren();
+        ghost = createGhost();
+        graph.addChild(ghost);
         Script.setPacman(pacman);
         ƒ.Loop.addEventListener("loopFrame" /* LOOP_FRAME */, update);
         ƒ.Loop.start(); // start the game loop to continuously draw the viewport, update the audiosystem and drive the physics i/a
@@ -191,6 +194,21 @@ var Script;
         }
         return true;
     }
+    function createGhost() {
+        let node = new ƒ.Node("Ghost");
+        let mesh = new ƒ.MeshSphere();
+        let material = new ƒ.Material("MaterialGhost", ƒ.ShaderLit, new ƒ.CoatColored());
+        let cmpTransfrom = new ƒ.ComponentTransform();
+        let cmpMesh = new ƒ.ComponentMesh(mesh);
+        let cmpMaterial = new ƒ.ComponentMaterial(material);
+        cmpMaterial.clrPrimary = ƒ.Color.CSS("red");
+        node.addComponent(cmpMaterial);
+        node.addComponent(cmpMesh);
+        node.addComponent(cmpTransfrom);
+        node.mtxLocal.translateX(2);
+        cmpTransfrom.mtxLocal.translateY(1);
+        return node;
+    }
 })(Script || (Script = {}));
 var Script;
 (function (Script) {
@@ -209,8 +227,6 @@ var Script;
         spriteNode.mtxLocal.translateY(0.2);
         spriteNode.mtxLocal.translateX(0.1);
         _node.addChild(spriteNode);
-        _node.getComponent(ƒ.ComponentMaterial).clrPrimary = new ƒ.Color(0, 0, 0, 0);
-        spriteNode.mtxLocal.rotateZ(90);
     }
     Script.setPacman = setPacman;
     async function loadSprites() {

@@ -16,16 +16,7 @@ namespace Script {
     spriteNode.mtxLocal.translateZ(0.5);
     spriteNode.mtxLocal.translateY(0.2);
     spriteNode.mtxLocal.translateX(0.1);
-
-
     _node.addChild(spriteNode);
-    _node.getComponent(ƒ.ComponentMaterial).clrPrimary = new ƒ.Color(
-      0,
-      0,
-      0,
-      0
-    );
-    spriteNode.mtxLocal.rotateZ(90);
   }
 
   export async function loadSprites(): Promise<void> {

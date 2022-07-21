@@ -17,6 +17,7 @@ namespace Script {
 
   let viewport: ƒ.Viewport;
   let pacman: ƒ.Node;
+  let ghost: ƒ.Node;
   let walls: ƒ.Node[];
   let paths: ƒ.Node[];
 
@@ -86,6 +87,8 @@ namespace Script {
     pacman = graph.getChildrenByName("pacman")[0];
     walls = graph.getChildrenByName("grid")[0].getChild(1).getChildren();
     paths = graph.getChildrenByName("grid")[0].getChild(0).getChildren();
+    ghost = createGhost();
+    graph.addChild(ghost);
 
     setPacman(pacman);
 
@@ -193,5 +196,28 @@ namespace Script {
     }
 
     return true;
+  }
+
+  function createGhost() {
+    let node: ƒ.Node = new ƒ.Node("Ghost");
+
+    let mesh: ƒ.MeshSphere = new ƒ.MeshSphere();
+    let material: ƒ.Material = new ƒ.Material("MaterialGhost", ƒ.ShaderLit, new ƒ.CoatColored());
+
+    let cmpTransfrom: ƒ.ComponentTransform = new ƒ.ComponentTransform();
+    let cmpMesh: ƒ.ComponentMesh = new ƒ.ComponentMesh(mesh);
+    let cmpMaterial: ƒ.ComponentMaterial = new ƒ.ComponentMaterial(material);
+
+    cmpMaterial.clrPrimary = ƒ.Color.CSS("red");
+
+    node.addComponent(cmpMaterial);
+    node.addComponent(cmpMesh);
+    node.addComponent(cmpTransfrom);
+
+    node.mtxLocal.translateX(2);
+    cmpTransfrom.mtxLocal.translateY(1);
+
+    return node;
+
   }
 }
